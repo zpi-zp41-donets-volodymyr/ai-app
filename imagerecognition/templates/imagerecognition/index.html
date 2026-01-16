@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Image Recognition - TensorFlow</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding: 20px;
+            }
+
+            .container {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+                max-width: 600px;
+                width: 100%;
+                padding: 40px;
+            }
+
+            h1 {
+                color: #333;
+                margin-bottom: 10px;
+                font-size: 28px;
+                text-align: center;
+            }
+
+            .subtitle {
+                text-align: center;
+                color: #666;
+                margin-bottom: 30px;
+                font-size: 14px;
+            }
+
+            .upload-area {
+                border: 3px dashed #667eea;
+                border-radius: 8px;
+                padding: 40px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                background-color: #f8f9ff;
+            }
+
+            .upload-area:hover {
+                background-color: #f0f2ff;
+                border-color: #764ba2;
+            }
+
+            .upload-area.active {
+                background-color: #e8ebf5;
+                border-color: #764ba2;
+            }
+
+            .upload-icon {
+                font-size: 48px;
+                margin-bottom: 15px;
+            }
+
+            .upload-text {
+                color: #333;
+                font-size: 16px;
+                margin-bottom: 5px;
+            }
+
+            .upload-hint {
+                color: #999;
+                font-size: 12px;
+            }
+
+            #imageInput {
+                display: none;
+            }
+
+            .button-group {
+                margin-top: 20px;
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+            }
+
+            button {
+                padding: 12px 30px;
+                border: none;
+                border-radius: 6px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .btn-upload {
+                background-color: #667eea;
+                color: white;
+            }
+
+            .btn-upload:hover {
+                background-color: #764ba2;
+                transform: translateY(-2px);
+                box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            }
+
+            .btn-clear {
+                background-color: #f0f0f0;
+                color: #666;
+            }
+
+            .btn-clear:hover {
+                background-color: #e0e0e0;
+            }
+
+            .preview-section {
+                margin-top: 30px;
+                display: none;
+            }
+
+            .preview-section.show {
+                display: block;
+            }
+
+            #imagePreview {
+                max-width: 100%;
+                max-height: 300px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                display: block;
+            }
+
+            .results {
+                background-color: #f8f9ff;
+                padding: 20px;
+                border-radius: 8px;
+                display: none;
+            }
+
+            .results.show {
+                display: block;
+            }
+
+            .results h3 {
+                color: #333;
+                margin-bottom: 15px;
+                font-size: 18px;
+            }
+
+            .result-item {
+                background-color: white;
+                padding: 12px;
+                margin-bottom: 10px;
+                border-radius: 6px;
+                border-left: 4px solid #667eea;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .result-label {
+                color: #333;
+                font-weight: 500;
+                flex: 1;
+                text-transform: capitalize;
+            }
+
+            .result-confidence {
+                background-color: #667eea;
+                color: white;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+            }
+
+            .loading {
+                display: none;
+                text-align: center;
+                padding: 20px;
+            }
+
+            .loading.show {
+                display: block;
+            }
+
+            .spinner {
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #667eea;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 15px;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .loading-text {
+                color: #666;
+                font-size: 14px;
+            }
+
+            .error {
+                background-color: #ffebee;
+                color: #c62828;
+                padding: 12px;
+                border-radius: 6px;
+                margin-top: 15px;
+                display: none;
+            }
+
+            .error.show {
+                display: block;
+            }
+
+            .filename {
+                color: #666;
+                font-size: 12px;
+                margin-top: 10px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>🤖 Image Recognition</h1>
+            <p class="subtitle">Powered by TensorFlow & MobileNetV2</p>
+
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📸</div>
+                <div class="upload-text">Drag and drop an image here</div>
+                <div class="upload-hint">or click to select</div>
+            </div>
+
+            <input type="file" id="imageInput" accept="image/*" />
+
+            <div class="button-group">
+                <button class="btn-upload" id="uploadBtn">Choose Image</button>
+                <button class="btn-clear" id="clearBtn">Clear</button>
+            </div>
+
+            <div class="preview-section" id="previewSection">
+                <img id="imagePreview" alt="Preview" />
+                <div class="filename" id="filename"></div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div class="loading-text">Recognizing image...</div>
+            </div>
+
+            <div class="results" id="results">
+                <h3>Recognition Results</h3>
+                <div id="resultsList"></div>
+            </div>
+
+            <div class="error" id="error"></div>
+        </div>
+
+        <script>
+            const uploadArea = document.getElementById('uploadArea');
+            const imageInput = document.getElementById('imageInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const imagePreview = document.getElementById('imagePreview');
+            const previewSection = document.getElementById('previewSection');
+            const results = document.getElementById('results');
+            const resultsList = document.getElementById('resultsList');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const filename = document.getElementById('filename');
+
+            // Upload button click
+            uploadBtn.addEventListener('click', () => imageInput.click());
+
+            // File input change
+            imageInput.addEventListener('change', handleFileSelect);
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('active');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('active');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('active');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    imageInput.files = files;
+                    handleFileSelect();
+                }
+            });
+
+            uploadArea.addEventListener('click', () => imageInput.click());
+
+            // Clear button
+            clearBtn.addEventListener('click', clearAll);
+
+            function handleFileSelect() {
+                const file = imageInput.files[0];
+                if (!file) return;
+
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                    previewSection.classList.add('show');
+                    filename.textContent = `File: ${file.name}`;
+                    recognizeImage(file);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            function recognizeImage(file) {
+                const formData = new FormData();
+                formData.append('image', file);
+
+                loading.classList.add('show');
+                results.classList.remove('show');
+                errorDiv.classList.remove('show');
+
+                fetch('{% url "imagerecognition:recognize" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken')
+                    }
+                })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        loading.classList.remove('show');
+
+                        if (data.success) {
+                            displayResults(data.results);
+                        } else {
+                            showError(data.error);
+                        }
+                    })
+                    .catch((error) => {
+                        loading.classList.remove('show');
+                        showError('Error recognizing image: ' + error.message);
+                    });
+            }
+
+            function displayResults(predictions) {
+                resultsList.innerHTML = '';
+                predictions.forEach((pred) => {
+                    const div = document.createElement('div');
+                    div.className = 'result-item';
+                    div.innerHTML = `
+                    <div class="result-label">${pred.label}</div>
+                    <div class="result-confidence">${pred.confidence.toFixed(2)}%</div>
+                `;
+                    resultsList.appendChild(div);
+                });
+                results.classList.add('show');
+            }
+
+            function showError(message) {
+                errorDiv.textContent = message;
+                errorDiv.classList.add('show');
+            }
+
+            function clearAll() {
+                imageInput.value = '';
+                previewSection.classList.remove('show');
+                results.classList.remove('show');
+                errorDiv.classList.remove('show');
+                resultsList.innerHTML = '';
+            }
+
+            function getCookie(name) {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        if (cookie.substring(0, name.length + 1) === name + '=') {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            }
+        </script>
+    </body>
+</html>

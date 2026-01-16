@@ -4,3 +4,6 @@ __pycache__/
 db.sqlite3
 .DS_Store
 **/.DS_Store
+keras_cache/
+*.h5
+*.json
